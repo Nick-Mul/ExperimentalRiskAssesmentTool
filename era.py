@@ -61,5 +61,5 @@ risk_gas =  st.selectbox(
 if risk_gas == 'Yes':
     risk_what_gas = st.number_input("How many mmol of gas is expected", step=1.,format="%.2f")
 
-'Reaction was started on ',today, room_temp(reaction_temp),'Reaction hazard is ', rxn_hazard, ' and risk is', option2, 'the reaction is conducted on a', option3, overall_risk_statement(option1,option2)
+'Reaction was started on ',today, room_temp(reaction_temp),'Reaction hazard is ', rxn_hazard, ' and risk is', option2, 'the reaction is conducted on a', option3, overall_risk_statement(rxn_hazard,option2)
 
