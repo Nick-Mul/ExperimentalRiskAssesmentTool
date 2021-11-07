@@ -37,28 +37,25 @@ option3 = st.selectbox('WHAT SCALE IS THE REACTION CONDUCTED ON', ['', 'SMALL < 
 reaction_temp = st.number_input("What temperature will you be conducting the experiment at", step=1)
 
 st.write('Select all box that apply to your reaction:')
-option_x = st.checkbox('the strongly reaction exthermic')
+option_x = st.checkbox('reaction is exothermic')
 option_y = st.checkbox('incompatibilities exist between reaction compotents')
-option_z = st.checkbox('pyrophroic reagent')
-option_a = st.checkbox('strong oxidising agents')
+option_z = st.checkbox('pyrophroic reagent are used')
+option_a = st.checkbox('strong oxidising agents are used')
+risk_gas = st.checkbox('gas evolution is expected during the reaction or workup')
 
 rxn_hazard = st.selectbox(
-    'WhAT IS THE REACTION HAZARD?',
-     ['','HIGH','Medium','LOW'])
+    'What is the REACTION HAZARD?',
+     ['','HIGH','MEDIUM','LOW'])
 
 option2 = st.selectbox(
-    'WhAT IS THE RISK?',
-     ['','HIGH','Medium','LOW'])
+    'What is the REACTION RISK?',
+     ['','HIGH','MEDIUM','LOW'])
 
 option4 = st.selectbox(
     'Potential thermal instability and explosibility of intermediates, products and reaction mixtures',
     ['Yes','No'])
 
-risk_gas =  st.selectbox(
-    'Is any GAS EVOLUTION expected during reaction or work up',
-    ['No', 'Yes'])
-
-if risk_gas == 'Yes':
+if risk_gas == True:
     risk_what_gas = st.number_input("How many mmol of gas is expected", step=1.,format="%.2f")
 
 'Reaction was started on ',today, room_temp(reaction_temp),'Reaction hazard is ', rxn_hazard, ' and risk is', option2, 'the reaction is conducted on a', option3, overall_risk_statement(rxn_hazard,option2)
