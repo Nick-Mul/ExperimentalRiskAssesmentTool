@@ -1,62 +1,61 @@
-import streamlit as st
-import pandas as pd
-import datetime
+from dash import Dash, dcc, html, Input, Output, callback
+import dash_bootstrap_components as dbc
 
-#write todays date
-today = datetime.date.today()
 
-st.text_input("Your experiment ID", key="ELN_ID")
+app = Dash(external_stylesheets=[dbc.themes.COSMO])
+server=app.server
+rxn_temp = dcc.Input(value='', type='number',placeholder='temperature',max=300)
+my_output = html.Div()
+vial_vol = dcc.Input(value='', type='number',placeholder='vial vol',min=1,max=50)
+gas_mmol = dcc.Input(value='0',type='number',placeholder='mmol gas',min=0)
+vol_solvent = dcc.Input(value='',type='number')
+#need a way of error proofing vol_solvent < vial_vol (child dependency?)
 
-# You can access the value at any point with:
-st.session_state.ELN_ID
+def calculate_pressure(vial_vol,vol_solvent,rxn_temp,mmol_gas_generated):
+    total_gas = float(vial_vol) - float(vol_solvent)
+    mmol_gas = (total_gas/24.5) + float(mmol_gas_generated)
+    temp_ideal_gas= float(rxn_temp) + 273
+    print(mmol_gas)
+    pressure = (mmol_gas/1000)*8.314*(temp_ideal_gas)/(total_gas/1E6)
+    return round(pressure/100000, 2)
 
-st.text('please consider greener solvents')
+app.layout = html.Div([
+    html.H1("Sealed vessel risk assesment tool"),
+    html.Div([
+        "Reaction temp: ",
+        rxn_temp, 
+    ],style={'padding': 10, 'flex': 1}),
+    html.Br(),
+    html.Div(["Volume of vial (mL): ",vial_vol],style={'padding': 10, 'flex': 1}),
+    html.Br(),
+    html.Div(["mmol of gas generated in reaction: ",gas_mmol],style={'padding': 10, 'flex': 1}),
+    html.Br(),
+    html.Div(["total volume of solvent used (mL): ",vol_solvent],style={'padding': 10, 'flex': 1}),
+    html.Br(),
+    html.Div(),
+    html.Button('Run', id='apply-button', n_clicks=0),
+    my_output
+])
 
-def overall_risk_statement(risk,hazard):
-    if risk == 'HIGH' and hazard == 'HIGH':
-        return ('overall risk is high')
-    elif risk == 'LOW' and hazard == 'LOW':
-        return('overall risk is low and generic risk assement covers all')
-    elif risk == 'MEDIUM' or 'HIGH' and hazard == 'MEDIUM' or 'HIGH':
-        return('overall risk is high and additional control measures reduced the risk to acceptable')
+if rxn_temp != None:
+    @callback(
+        Output(my_output, component_property='children'),
+        [Input('apply-button','n_clicks')],
+        Input(vial_vol, component_property='value'),
+        Input(vol_solvent,component_property='value'),
+        Input(rxn_temp,component_property='value'),
+        Input(gas_mmol,component_property='value')
+    )
+    def update_output_div(n_clicks,vial_vol,vol_solvent,rxn_temp,gas_mmol):
+        if n_clicks > 0:
+            delta_vol = calculate_pressure(vial_vol,vol_solvent,rxn_temp,gas_mmol)
+            n_clicks = 0
+            if delta_vol < 7:
+                return f'The reaction was conducted in vial of volume {vial_vol} mL, with total solvent volume of {vol_solvent} mL at a max reaction temperature of {rxn_temp}, this generates a pressure of {delta_vol} bar, assuming ideal gas and no vapor pressure'
+            else:
+                return f'pressure is {delta_vol} bar, recommended that the maximum operating pressure be no more than 100 psi (~7 bar). '
+        else:
+            return 'not calaculated yet'
 
-def room_temp(reaction_temp):
-    if reaction_temp <= 30 or reaction_temp > 15:
-        return('reaction was conducted at room temperature')
-    else:
-        return(f'reaction was conducted at {reaction_temp}')
-
-def volumn_of_gas(gas_mmol,temp,gas):
-    n_ideal_gas=(float(gas_mmol)/1000)
-    temp_ideal_gas= float(temp) + 273
-    Volume = ((n_ideal_gas*8.31441*temp_ideal_gas)/101325)*1E6
-    return(f'{Volume} mL of {gas} is generated at {temp} C and 1 ATM')
-
-option3 = st.selectbox('WHAT SCALE IS THE REACTION CONDUCTED ON', ['', 'SMALL < 10 mmol', 'LARGE > 100 mmol'])
-
-reaction_temp = st.number_input("What temperature will you be conducting the experiment at", step=1)
-
-st.write('Select all box that apply to your reaction:')
-option_x = st.checkbox('reaction is exothermic')
-option_y = st.checkbox('incompatibilities exist between reaction compotents')
-option_z = st.checkbox('pyrophroic reagent are used')
-option_a = st.checkbox('strong oxidising agents are used')
-risk_gas = st.checkbox('gas evolution is expected during the reaction or workup')
-
-rxn_hazard = st.selectbox(
-    'What is the REACTION HAZARD?',
-     ['','HIGH','MEDIUM','LOW'])
-
-option2 = st.selectbox(
-    'What is the REACTION RISK?',
-     ['','HIGH','MEDIUM','LOW'])
-
-option4 = st.selectbox(
-    'Potential thermal instability and explosibility of intermediates, products and reaction mixtures',
-    ['Yes','No'])
-
-if risk_gas == True:
-    risk_what_gas = st.number_input("How many mmol of gas is expected", step=1.,format="%.2f")
-
-'Reaction was started on ',today, room_temp(reaction_temp),'Reaction hazard is ', rxn_hazard, ' and risk is', option2, 'the reaction is conducted on a', option3, overall_risk_statement(rxn_hazard,option2)
-
+if __name__ == '__main__':
+    app.run_server(debug=True)
